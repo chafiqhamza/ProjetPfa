@@ -14,8 +14,8 @@ def match_profiles(query, profiles):
     for profile in profiles:
         # Combine all searchable fields into one string
         searchable_text = f"{profile.get('name', '')} {profile.get('bio', '')} {profile.get('profile_url', '')} {profile.get('featured_repo', '')}".lower()
-        # Calculate a simple match score based on the presence of query words
-        score = sum(1 for word in query_lower.split() if word in searchable_text)
+        # Calculate a match score based on the presence of query words and their relevance
+        score = sum(2 if word in profile.get('bio', '').lower() else 1 for word in query_lower.split() if word in searchable_text)
         if score > 0:
             results.append({
                 'id': profile.get('id', ''),

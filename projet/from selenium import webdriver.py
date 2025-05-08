@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import os
 import uuid
 from profile_manager import load_profiles, match_profiles, add_profile, delete_profile
-from utils import extract_text_from_pdf, extract_text_from_docx, generate_swot_analysis, query_llm, summarize_job_description
+from utils import extract_text_from_pdf, extract_text_from_docx, generate_swot_analysis, query_llm, summarize_job_description, generate_dynamic_swot_analysis
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -105,6 +105,31 @@ def summarize():
         return jsonify({"error": "No description provided"}), 400
     summary = summarize_job_description(description)
     return jsonify({"summary": summary})
+
+@app.route('/dynamic_swot', methods=['POST'])
+def dynamic_swot():
+    if 'cv' not in request.files:
+        return "No file uploaded", 400
+    cv_file = request.files['cv']
+    if cv_file and allowed_file(cv_file.filename):
+        name = uuid.uuid4().hex + '_' + secure_filename(cv_file.filename)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], name)
+        cv_file.save(path)
+
+        if name.lower().endswith('.pdf'):
+            cv_text = extract_text_from_pdf(path)
+        else:
+            cv_text = extract_text_from_docx(path)
+
+        try:
+            profiles = load_profiles('profiles.json')
+            comparison_cvs = [p.get('bio', '') for p in profiles]
+            dynamic_swot = generate_dynamic_swot_analysis(cv_text, comparison_cvs)
+            return jsonify(dynamic_swot)
+        except FileNotFoundError:
+            return "profiles.json not found", 500
+
+    return "Unsupported file format", 400
 
 if __name__ == '__main__':
     app.run(debug=True)

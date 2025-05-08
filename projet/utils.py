@@ -36,3 +36,24 @@ def query_llm(prompt):
 def summarize_job_description(description):
     prompt = f"Summarize the following job description:\n{description}"
     return query_llm(prompt)
+
+# Dynamic SWOT analysis
+def generate_dynamic_swot_analysis(cv_text, comparison_cvs):
+    """Generate a dynamic SWOT analysis for a CV using AI-powered tools."""
+    openai.api_key = "your_openai_api_key_here"
+
+    # Combine the CV text with comparison CVs for context
+    prompt = (
+        f"Analyze the following CV and provide a SWOT analysis (Strengths, Weaknesses, Opportunities, Threats):\n\n"
+        f"CV to analyze:\n{cv_text}\n\n"
+        f"Comparison CVs:\n{comparison_cvs}\n\n"
+        f"Provide a detailed SWOT analysis based on the comparison."
+    )
+
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=500
+    )
+
+    return response.choices[0].text.strip()
