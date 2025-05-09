@@ -4,8 +4,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
-from bs4 import BeautifulSoup
-
 def scrape_stackoverflow(user_ids, output_file='profiles.json'):
     """Scrape Stack Overflow user data and enrich profiles.json."""
     with open(output_file, 'r', encoding='utf-8') as f:
@@ -28,52 +26,45 @@ def scrape_stackoverflow(user_ids, output_file='profiles.json'):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(profiles, f, indent=4)
 
-def scrape_github_profiles(usernames, output_file='profiles.json'):
-    """Scrape GitHub developer profiles and save to a JSON file."""
-    profiles = []
+def scrape_github(usernames, output_file='profiles.json'):
+    driver = webdriver.Chrome()
+    with open(output_file, 'r', encoding='utf-8') as f:
+        profiles = json.load(f)
 
     for username in usernames:
-        url = f"https://github.com/{username}"
+        url = f"https://github.com/{username}?tab=repositories"
+        driver.get(url)
+        time.sleep(2)
+
         try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            contributions = driver.find_element(By.CSS_SELECTOR, 'h2.f4.text-normal').text
+        except:
+            contributions = '0 contributions'
 
-            # Extract name
-            name = soup.find('span', class_='p-name').text.strip() if soup.find('span', class_='p-name') else username
+        for profile in profiles:
+            if profile['id'] == username:
+                profile['contributions'] = contributions
+                break
 
-            # Extract bio
-            bio = soup.find('div', class_='p-note').text.strip() if soup.find('div', class_='p-note') else ""
+    driver.quit()
 
-            # Extract repositories
-            repositories = []
-            repo_section = soup.find_all('a', itemprop='name codeRepository')
-            for repo in repo_section:
-                repo_name = repo.text.strip()
-                repo_url = f"https://github.com{repo['href']}"
-                repositories.append({"name": repo_name, "url": repo_url})
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(profiles, f, indent=4)
 
-            # Extract contributions
-            contributions = "0 contributions"
-            contribution_section = soup.find('h2', class_='f4 text-normal mb-2')
-            if contribution_section:
-                contributions = contribution_section.text.strip()
+def scrape_other_source(api_url, output_file='profiles.json'):
+    """Scrape data from another open-source API and enrich profiles.json."""
+    with open(output_file, 'r', encoding='utf-8') as f:
+        profiles = json.load(f)
 
-            profile_data = {
-                "id": username,
-                "name": name,
-                "bio": bio,
-                "profile_url": url,
-                "repositories": repositories,
-                "contributions": contributions
-            }
-            profiles.append(profile_data)
-
-            # Delay to avoid rate limits
-            time.sleep(2)
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching data for {username}: {e}")
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        data = response.json()
+        for user_data in data.get('users', []):
+            for profile in profiles:
+                if profile['id'] == user_data.get('id'):
+                    profile['other_source_expertise'] = user_data.get('expertise', '')
+                    profile['other_source_projects'] = user_data.get('projects', [])
+                    break
 
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(profiles, f, indent=4)
@@ -107,15 +98,14 @@ def scrape_kaggle(usernames, output_file='profiles.json'):
 
 if __name__ == '__main__':
     stackoverflow_ids = ['22656', '23354']  # Example Stack Overflow user IDs
-    github_usernames = [
-        "weblate", "sxyazi", "jlowin", "amir1376", "zeux", "geelen", "brandur", "idosal",
-        "sb2nov", "miurla", "RobinMalfait", "earlephilhower", "holtskinner", "steveluscher",
-        "ezyang", "mxsm", "JarbasAl", "offa", "bdraco", "comfyanonymous", "dgtlmoon",
-        "manusa", "sethvargo", "yetone", "jxom"
-    ]
+    github_usernames = ['weblate', 'sxyazi', 'jlowin']  # Example GitHub usernames
 
     scrape_stackoverflow(stackoverflow_ids)
-    scrape_github_profiles(github_usernames)
+    scrape_github(github_usernames)
+
+    # Example API URL for another open-source platform
+    other_source_api_url = 'https://api.example.com/users'
+    scrape_other_source(other_source_api_url)
 
     # Example Kaggle usernames
     kaggle_usernames = ['username1', 'username2']

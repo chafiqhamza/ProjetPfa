@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job-Matching Chatbot</title>
+  <title>CV Analyzer & Job Matcher</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -55,22 +55,104 @@
     .card a:hover {
       text-decoration: underline;
     }
+    .swot-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .swot-box {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .swot-box h3 {
+      color: #0056b3;
+      margin-top: 0;
+      border-bottom: 2px solid #0056b3;
+      padding-bottom: 10px;
+    }
+    .swot-box ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .swot-box li {
+      margin: 8px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .swot-box li:before {
+      content: "•";
+      color: #0056b3;
+      position: absolute;
+      left: 0;
+    }
+    .strengths { background-color: #e8f5e9; }
+    .weaknesses { background-color: #ffebee; }
+    .opportunities { background-color: #e3f2fd; }
+    .threats { background-color: #fff3e0; }
   </style>
 </head>
 <body>
-  <h1>GitHub Developer Matcher</h1>
-  <form method="post">
+  <h1>CV Analyzer & Job Matcher</h1>
+  
+  <form method="post" enctype="multipart/form-data" action="/">
     <label for="title">Job Title</label>
-    <input id="title" name="title" placeholder="Enter job title" required>
+    <input id="title" name="title" placeholder="Enter job title">
 
     <label for="description">Job Description</label>
-    <textarea id="description" name="description" placeholder="Enter job description" rows="4" required></textarea>
+    <textarea id="description" name="description" placeholder="Enter job description" rows="4"></textarea>
 
-    <button type="submit">Find Matches</button>
+    <label for="cv">Upload CV</label>
+    <input id="cv" name="cv" type="file" accept=".pdf,.docx">
+
+    <button type="submit">Analyze and Match</button>
   </form>
 
+  {% if swot_analysis %}
+  <h2>SWOT Analysis</h2>
+  <div class="swot-container">
+    <div class="swot-box strengths">
+      <h3>Strengths</h3>
+      <ul>
+        {% for strength in swot_analysis.Strengths %}
+          <li>{{ strength }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    
+    <div class="swot-box weaknesses">
+      <h3>Weaknesses</h3>
+      <ul>
+        {% for weakness in swot_analysis.Weaknesses %}
+          <li>{{ weakness }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    
+    <div class="swot-box opportunities">
+      <h3>Opportunities</h3>
+      <ul>
+        {% for opportunity in swot_analysis.Opportunities %}
+          <li>{{ opportunity }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    
+    <div class="swot-box threats">
+      <h3>Threats</h3>
+      <ul>
+        {% for threat in swot_analysis.Threats %}
+          <li>{{ threat }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
   {% if results %}
-    <h2>Top Matches</h2>
+    <h2>Job Matches</h2>
     {% for r in results %}
       <div class="card">
         <strong>{{ r.name }}</strong> (Score: {{ r.score }})<br>
@@ -78,8 +160,6 @@
         <p>Featured Repo: {{ r.featured_repo }}</p>
       </div>
     {% endfor %}
-  {% else %}
-    <p>No matches found. Please try a different query.</p>
   {% endif %}
 </body>
 </html>

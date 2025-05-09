@@ -18,17 +18,42 @@ def allowed_file(filename):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     results = []
-    if request.method == 'POST' and 'title' in request.form:
-        # Job matching
-        title = request.form['title']
-        description = request.form['description']
-        query = f"{title} {description}".strip()
-        try:
-            profiles = load_profiles('profiles.json')
-            results = match_profiles(query, profiles)
-        except FileNotFoundError:
-            results = []
-    return render_template('index.html', results=results)
+    swot_analysis = None
+
+    if request.method == 'POST':
+        # Handle CV upload for SWOT analysis
+        if 'cv' in request.files:
+            cv_file = request.files['cv']
+            if cv_file and allowed_file(cv_file.filename):
+                name = uuid.uuid4().hex + '_' + secure_filename(cv_file.filename)
+                path = os.path.join(app.config['UPLOAD_FOLDER'], name)
+                cv_file.save(path)
+
+                try:
+                    # Extract text from CV
+                    if name.lower().endswith('.pdf'):
+                        text = extract_text_from_pdf(path)
+                    else:
+                        text = extract_text_from_docx(path)
+
+                    # Generate detailed SWOT analysis
+                    swot_analysis = generate_swot_analysis(text)
+                finally:
+                    # Clean up the uploaded file
+                    os.remove(path)
+
+        # Handle job matching
+        if 'title' in request.form:
+            title = request.form['title']
+            description = request.form['description']
+            query = f"{title} {description}".strip()
+            try:
+                profiles = load_profiles('profiles.json')
+                results = match_profiles(query, profiles)
+            except FileNotFoundError:
+                results = []
+
+    return render_template('index.html', results=results, swot_analysis=swot_analysis)
 
 @app.route('/open_cv/<filename>')
 def open_cv(filename):
