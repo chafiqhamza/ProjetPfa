@@ -15,6 +15,14 @@ steps:
     pip install gunicorn
   displayName: 'Installer les dépendances'
 
+# Si vous n'avez pas besoin de pousser du code, vous pouvez commenter ou supprimer l'étape SSH suivante
+# - task: InstallSSHKey@0
+#   inputs:
+#     sshPublicKey: '$(SSH_PUBLIC_KEY)'
+#     sshKeySecureFile: 'id_rsa'
+#     knownHostsEntry: '<github.com ou autre hôte SSH>'
+#   displayName: 'Installer la clé SSH'
+
 - task: AzureWebApp@1
   inputs:
     azureSubscription: '<nom-de-votre-service-connexion>'
